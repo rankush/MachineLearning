@@ -1,0 +1,137 @@
+/* BORQS Software Solutions Pvt Ltd. CONFIDENTIAL
+ * Copyright (c) 2015 All rights reserved.
+ *
+ * The source code contained or described herein and all documents
+ * related to the source code ("Material") are owned by BORQS Software
+ * Solutions Pvt Ltd. No part of the Material may be used,copied,
+ * reproduced, modified, published, uploaded,posted, transmitted,
+ * distributed, or disclosed in any way without BORQS Software
+ * Solutions Pvt Ltd. prior written permission.
+ *
+ * No license under any patent, copyright, trade secret or other
+ * intellectual property right is granted to or conferred upon you
+ * by disclosure or delivery of the Materials, either expressly, by
+ * implication, inducement, estoppel or otherwise. Any license
+ * under such intellectual property rights must be express and
+ * approved by BORQS Software Solutions Pvt Ltd. in writing.
+ *
+ */
+
+package com.borqs.wearable.torch;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+public class TorchActivity extends Activity {
+
+    private static final String LOG_TAG = "TorchActivity";
+    private int mExistingBrightness;
+    private ImageView mSwitch;
+    private RelativeLayout mTorchContainer;
+    private boolean mTorchOn;
+    private boolean mCanWritePerm = true;
+    private Context mContext;
+    private TextView mBatteryInfoText;
+    private static final int MAX_BRIGHTNESS = 255;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        mContext = getApplicationContext();
+        mSwitch = (ImageView) findViewById(R.id.torch_image);
+        mBatteryInfoText=(TextView) findViewById(R.id.text_msg);
+        mTorchContainer = (RelativeLayout) findViewById(R.id.torch_container);
+        try {
+            mExistingBrightness = android.provider.Settings.System.getInt(
+                    mContext.getContentResolver(),
+                    android.provider.Settings.System.SCREEN_BRIGHTNESS);
+        } catch (Exception e) {
+            // Throw an error case it couldn't be retrieved
+            Log.e(LOG_TAG, "Cannot access system brightness");
+            e.printStackTrace();
+            mCanWritePerm = false;
+        }
+        mTorchContainer.setOnClickListener(mSwitchListener);
+    }
+
+    private View.OnClickListener mSwitchListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (mTorchOn) {
+                turnOffTorch();
+            } else {
+                turnOnTorch();
+            }
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        turnOnTorch();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        turnOffTorch();
+    }
+
+    private void turnOnTorch() {
+        mTorchOn = true;
+        mTorchContainer.setBackgroundColor(Color.WHITE);
+        mSwitch.setImageResource(R.drawable.torch_off);
+        mBatteryInfoText.setText(getString(R.string.torch_off));
+        mBatteryInfoText.setTextColor(getColor(R.color.text_color_off));
+
+        if (mCanWritePerm) {
+            try {
+                android.provider.Settings.System
+                        .putInt(getContentResolver(),
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS,
+                                MAX_BRIGHTNESS);
+            } catch (Exception e) {
+                // Throw an error case it couldn't be retrieved
+                Log.e(LOG_TAG, "Cannot access system brightness");
+                e.printStackTrace();
+                mCanWritePerm = false;
+            }
+        } else {
+            Log.e(LOG_TAG, "No Write Permissions");
+        }
+    }
+
+    private void turnOffTorch() {
+        mTorchOn = false;
+        mTorchContainer.setBackgroundColor(Color.BLACK);
+        mSwitch.setImageResource(R.drawable.torch_on);
+        mBatteryInfoText.setText(getString(R.string.torch_on));
+        mBatteryInfoText.setTextColor(getColor(R.color.text_color_on));
+        if (mCanWritePerm) {
+            try {
+                android.provider.Settings.System.putInt(getContentResolver(),
+                        android.provider.Settings.System.SCREEN_BRIGHTNESS,
+                        mExistingBrightness);
+            } catch (Exception e) {
+                // Throw an error case it couldn't be retrieved
+                Log.e(LOG_TAG, "Cannot access system brightness");
+                e.printStackTrace();
+                mCanWritePerm = false;
+            }
+        } else {
+            Log.e(LOG_TAG, "No Write Permissions");
+        }
+    }
+}

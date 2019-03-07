@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Usage
+# parse-logs <dataset> <infile> <outfile>
+
+# create directory
+mkdir -p $1
+cd $1
+
+# extract GRAVITY_TEST and LINEAR_ACCELERATION_TEST from raw logcat
+cat ../$2 | grep -e "GRAVITY_TEST" -e "LINEAR_ACCELERATION_TEST" > log_file_temp_1.txt
+
+# remove timestamp and brackets
+awk '{print $7 $8 $9}' log_file_temp_1.txt | awk '{print substr($0,2,length($0)-2)}' > log_file_temp_2.txt
+
+# keep two data in same line separated by comma
+cat log_file_temp_2.txt | paste -sd ',\n' > $3
+
+# remove temp file
+rm log_file_temp_1.txt
+rm log_file_temp_2.txt
